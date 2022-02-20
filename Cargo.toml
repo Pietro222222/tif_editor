@@ -1,5 +1,5 @@
 [package]
-name = "TIF_EDITOR"
+name = "tif-editor"
 version = "0.1.0"
 edition = "2021"
 
