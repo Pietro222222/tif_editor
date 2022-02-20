@@ -11,7 +11,7 @@ its highly unoptimized, and i prolly wont make it better because im lazy (it gen
 # keys 
 
 ## Arrow keys 
-arrow keys are used to move the cursor position without painting the are 
+arrow keys are used to move the cursor position without painting the area 
 
 ## space 
 space paints the are with the select pixel 
