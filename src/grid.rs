@@ -140,15 +140,6 @@ impl Grid {
         for i in 0..self.height {
             for j in 0..self.width {
                 let pix = self.get_pixel_at((i, j));
-                // if pix.color != current_color || pixels >= 255 {
-                //     if pixels > 0 {
-                //         buffer.push(current_color.to_tif_color());
-                //         buffer.push(pixels);
-                //     }
-                //     pixels = 0;
-                //     current_color = pix.color;
-                // }
-
                 if pix.color == current_color {
                     pixels += 1;
                     if pixels >= 255 {
@@ -164,10 +155,6 @@ impl Grid {
                     current_color = pix.color;
                     pixels = 1;
                 }
-
-                // pixels += 1;
-                //buffer.push(pix.color.to_tif_color());
-                //buffer.push(0x01);
             }
         }
         if pixels > 0 {
