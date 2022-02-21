@@ -134,12 +134,45 @@ impl Grid {
         vec![0x2e, 0x54, 0x49, 0x46, 0x20, self.width as u8]
     }
     pub fn append_pixels<'a>(&self, buffer: &'a mut Vec<u8>) {
+        let mut current_color = Color::Black;
+        let mut pixels = 0;
+
         for i in 0..self.height {
             for j in 0..self.width {
                 let pix = self.get_pixel_at((i, j));
-                buffer.push(pix.color.to_tif_color());
-                buffer.push(0x01);
+                // if pix.color != current_color || pixels >= 255 {
+                //     if pixels > 0 {
+                //         buffer.push(current_color.to_tif_color());
+                //         buffer.push(pixels);
+                //     }
+                //     pixels = 0;
+                //     current_color = pix.color;
+                // }
+
+                if pix.color == current_color {
+                    pixels += 1;
+                    if pixels >= 255 {
+                        buffer.push(current_color.to_tif_color());
+                        buffer.push(pixels);
+                        pixels = 0;
+                    }
+                } else {
+                    if pixels > 0 {
+                        buffer.push(current_color.to_tif_color());
+                        buffer.push(pixels);
+                    }
+                    current_color = pix.color;
+                    pixels = 1;
+                }
+
+                // pixels += 1;
+                //buffer.push(pix.color.to_tif_color());
+                //buffer.push(0x01);
             }
+        }
+        if pixels > 0 {
+            buffer.push(current_color.to_tif_color());
+            buffer.push(pixels);
         }
     }
     pub fn save_to_file(&self, filename: String) {

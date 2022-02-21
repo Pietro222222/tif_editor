@@ -1,6 +1,7 @@
 use grid::{Grid, GridMode};
 use pancurses::{
-    curs_set, endwin, has_colors, init_pair, initscr, noecho, raw, start_color, Input, Window,
+    curs_set, endwin, has_colors, init_pair, initscr, napms, noecho, raw, start_color, Input,
+    Window,
 };
 use std::{env, process::exit};
 mod grid;
@@ -114,6 +115,7 @@ fn main() {
         grid.draw_colors(&window);
         grid.draw_selected_color(&window);
         grid.draw_current_mode(&window);
+        napms(20);
     }
     grid.save_to_file("image.tif".into());
     endwin();

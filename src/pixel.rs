@@ -2,7 +2,7 @@ use pancurses::{Window, COLOR_PAIR};
 use strum::IntoEnumIterator; // 0.17.1
 use strum_macros::EnumIter; // 0.17.1
 
-#[derive(Clone, Copy, EnumIter, Debug)]
+#[derive(Clone, Copy, EnumIter, Debug, PartialEq, Eq)]
 pub enum Color {
     Black,
     Red,
