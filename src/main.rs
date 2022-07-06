@@ -13,6 +13,7 @@ mod cursor;
 mod editor;
 mod mode;
 mod pallete;
+mod area;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -46,8 +47,7 @@ fn main() -> Result<()> {
 
     let mut editor = Editor::new(tif);
     editor.is_terminal_size_enough()?;
-    editor.draw_ui().ok();
-    //    editor.set_cursor_pos((2, 3))?;
+    editor.draw_ui()?;
     'editor: loop {
         if let Some(c) = editor.getch() {
             let mut cursor_pos = editor.cursor.pos;
@@ -78,6 +78,10 @@ fn main() -> Result<()> {
                     }else if matches!(c, '1'..='8') && editor.get_mode() == Mode::Selection {
                         let color = c as u8 - 48;
                         editor.set_selected_color(Color(color as u32).into());
+                    }else if c == ' ' && editor.get_mode() == Mode::Insertion {
+                        editor.set_pix_at_cursor(editor.selected_color)?;
+                    }else if c == 's' && editor.get_mode() == Mode::Selection {
+                        editor.area_mode();
                     }
 
                     if editor.get_mode() == Mode::Insertion {
@@ -101,6 +105,38 @@ fn main() -> Result<()> {
                                 cursor_pos.0 += 1;
                                 editor.set_cursor_pos(cursor_pos).ok();
                                 editor.set_pix_at_cursor(editor.selected_color)?;
+                            }
+                            _ => {}
+                        }
+                    }else if editor.get_mode() == Mode::Area {
+                        match c.to_ascii_lowercase() {
+                            'a' => {
+                                cursor_pos.1 -= 1;
+                                editor.set_cursor_pos(cursor_pos).ok(); //using the result of this function might end up in unncessary crashes
+                                editor.set_area_based_on_current_cursor_position()?;
+                                editor.draw_area()?;
+                            }
+                            'd' => {
+                                cursor_pos.1 += 1;
+                                editor.set_cursor_pos(cursor_pos).ok();
+                                editor.set_area_based_on_current_cursor_position()?;
+                                editor.draw_area()?;
+                            }
+                            'w' => {
+                                cursor_pos.0 -= 1;
+                                editor.set_cursor_pos(cursor_pos).ok();
+                                editor.set_area_based_on_current_cursor_position()?;
+                                editor.draw_area()?;
+                            }
+                            's' => {
+                                cursor_pos.0 += 1;
+                                editor.set_cursor_pos(cursor_pos).ok();
+                                editor.set_area_based_on_current_cursor_position()?;
+                                editor.draw_area()?;
+                            },
+                            ' ' => {
+                                editor.set_area_color(editor.selected_color)?;
+                                editor.set_mode(Mode::Selection);
                             }
                             _ => {}
                         }

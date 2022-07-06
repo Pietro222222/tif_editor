@@ -1,5 +1,7 @@
 use super::color::Color;
 use super::pallete::Pallete;
+use crate::area::Area;
+use crate::area::Point;
 use crate::color;
 use crate::cursor::Cursor;
 use crate::mode::Mode;
@@ -19,6 +21,7 @@ pub struct Editor {
     pub selected_color: PixelColor,
     pub cursor: Cursor,
     pub pallete: Pallete,
+    pub area: Option<Area>,
 }
 
 impl Editor {
@@ -30,13 +33,26 @@ impl Editor {
             selected_color: PixelColor::Black,
             cursor: Cursor::new(),
             pallete: Pallete::new(),
+            area: None,
         }
+    }
+
+    fn get_area(&self) -> Option<&Area> {
+        self.area.as_ref()
+    }
+
+    fn get_mut_area(&mut self) -> Option<&mut Area> {
+        self.area.as_mut()
     }
 
     pub fn get_mode(&self) -> Mode {
         self.mode
     }
     pub fn set_mode(&mut self, m: Mode) {
+        if self.mode == Mode::Area && m != Mode::Area {
+            self.draw_area_pixels().ok();
+            self.cursor.toogle_hidden();
+        }
         self.mode = m;
         self.draw_status();
         self.refresh();
@@ -53,6 +69,15 @@ impl Editor {
         self.refresh();
     }
 
+    pub fn area_mode(&mut self) {
+        self.mode = Mode::Area;
+        self.area = Some(Area::new(
+            Point::new(self.cursor.pos.0, self.cursor.pos.1),
+            Point::new(self.cursor.pos.0, self.cursor.pos.1),
+        ));
+        self.draw_status();
+        self.cursor.toogle_hidden();
+    }
     pub fn get_pix(&self, pos: &(usize, usize)) -> Option<&PixelColor> {
         let pix = self.tif_image.pixels.get(pos.0)?;
         pix.get(pos.1)
@@ -75,9 +100,8 @@ impl Editor {
     }
     pub fn set_cursor_pos(&mut self, pos: (i32, i32)) -> Result<()> {
         let image = self.get_image_size();
-        if !(pos.0 >= 0 && pos.0 <= image.0 as i32 -1
-             &&
-             pos.1 >= 0 && pos.1 <= image.1 as i32 - 1) {
+        if !(pos.0 >= 0 && pos.0 <= image.0 as i32 - 1 && pos.1 >= 0 && pos.1 <= image.1 as i32 - 1)
+        {
             return Err(anyhow!("out of image bounds"));
         }
         self.redraw_pix(self.cursor.coord_as_usize())?;
@@ -145,10 +169,92 @@ impl Editor {
             pos += 2;
         }
     }
+
+    fn get_area_positions(&self) -> Result<((i32, i32), (i32, i32))> {
+        if self.mode != Mode::Area {
+            return Err(anyhow!("impossible to draw area. not in Area mode"));
+        }
+        let area = self.get_area().unwrap();
+        let area_x = if area.starting_point.x >= area.final_point.x {
+            (area.final_point.x, area.starting_point.x)
+        } else {
+            (area.starting_point.x, area.final_point.x)
+        };
+        let area_y = if area.starting_point.y >= area.final_point.y {
+            (area.final_point.y, area.starting_point.y)
+        } else {
+            (area.starting_point.y, area.final_point.y)
+        };
+         Ok((area_y, area_x))
+    }
+    ///redraw all the pixels that were covered by the area selection
+    fn draw_area_pixels(&self) -> Result<()> {
+        let area_position = self.get_area_positions()?;
+        for i in (area_position.0 .0)..=(area_position.0 .1) {
+            for j in area_position.1 .0..=area_position.1 .1 {
+                self.redraw_pix((i as usize, j as usize))?;
+            }
+        }
+        Ok(())
+    }
+
+    pub fn draw_area(&self) -> Result<()> {
+        let area_position = self.get_area_positions()?;
+        self.attrset(COLOR_PAIR(9));
+        for i in (area_position.0 .0)..=(area_position.0 .1) {
+            for j in area_position.1 .0..=area_position.1 .1 {
+                if (i >= 0 && i <= self.tif_image.height as i32 - 1) && j >= 0 && j <= self.tif_image.width as i32 - 1 {
+                    self.mvaddch(i, j, '#');
+                }
+            }
+        }
+        self.attroff(COLOR_PAIR(9));
+        self.refresh();
+        Ok(())
+    }
+    ///set the color of the pixels selected in the area
+    pub fn set_area_color(&mut self, color: PixelColor) -> Result<()> {
+        let area_position = self.get_area_positions()?;
+        for i in (area_position.0 .0)..=(area_position.0 .1) {
+            for j in area_position.1 .0..=area_position.1 .1 {
+                if (i >= 0 && i <= self.tif_image.height as i32 - 1) && j >= 0 && j <= self.tif_image.width as i32 - 1 {
+                    self.set_pix_color((i as usize, j as usize), color)?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn set_area_pos(&mut self, pos: (i32, i32)) -> Result<()> {
+        if self.mode != Mode::Area {
+            return Err(anyhow!("impossible to draw area. not in Area mode"));
+        }
+
+        let point = self.get_area().unwrap().final_point;
+        if point.x >= pos.1 || point.y >= pos.0 {
+            self.draw_area_pixels()?;
+        }
+
+        self.get_mut_area().unwrap().set_final_point_pos(pos);
+        self.draw_area()?;
+        Ok(())
+    }
+
+    pub fn set_area_based_on_current_cursor_position(&mut self) -> Result<()> {
+        self.set_area_pos(self.cursor.pos)
+    }
     fn draw_status(&self) {
         let pos_y = self.tif_image.height as i32 + 7;
-        self.mvprintw(pos_y, 0, format!("MODE: {:?}               ", self.get_mode()));
-        self.mvprintw(pos_y + 1, 0, format!("CURRENT COLOR: {:?}         ", self.selected_color));
+        self.mvprintw(
+            pos_y,
+            0,
+            format!("MODE: {:?}               ", self.get_mode()),
+        );
+        self.mvprintw(
+            pos_y + 1,
+            0,
+            format!("CURRENT COLOR: {:?}         ", self.selected_color),
+        );
     }
 
     fn draw_cursor(&self) {

@@ -2,4 +2,5 @@
 pub enum Mode {
     Insertion,
     Selection,
+    Area,
 }
