@@ -189,7 +189,7 @@ impl Editor {
         Ok((area_y, area_x))
     }
     ///redraw all the pixels that were covered by the area selection
-    fn draw_area_pixels(&self) -> Result<()> {
+    pub fn draw_area_pixels(&self) -> Result<()> {
         let area_position = self.get_area_positions()?;
         for i in (area_position.0 .0)..=(area_position.0 .1) {
             for j in area_position.1 .0..=area_position.1 .1 {
@@ -281,11 +281,11 @@ impl Editor {
     }
 
     pub fn draw_help(&self) -> Result<()> {
-        if self.tif_image.width as i32 + 45 > self.get_window_size().1 {
+        if self.tif_image.width as i32 + 50 > self.get_window_size().1 {
             return Err(anyhow!("window is too small"));
         }
         for j in 0..10 {
-            for i in self.tif_image.width as i32 + 10..self.tif_image.width as i32 + 45 {
+            for i in self.tif_image.width as i32 + 10..self.tif_image.width as i32 + 50 {
                 self.mvaddch(j, i, ' ');
             }
         }
