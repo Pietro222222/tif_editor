@@ -95,7 +95,6 @@ impl Editor {
         self.attrset(COLOR_PAIR(*color));
         self.mvaddch(pos.0 as i32, pos.1 as i32, ' ');
         self.attroff(COLOR_PAIR(*color));
-        self.refresh();
         Ok(())
     }
     pub fn set_cursor_pos(&mut self, pos: (i32, i32)) -> Result<()> {
