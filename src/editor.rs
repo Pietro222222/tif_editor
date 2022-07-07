@@ -55,6 +55,7 @@ impl Editor {
         }
         self.mode = m;
         self.draw_status();
+        self.draw_help().ok(); //we dont really need to handle that error
         self.refresh();
     }
     pub fn get_image_size(&self) -> (u64, u8) {
@@ -75,6 +76,7 @@ impl Editor {
             Point::new(self.cursor.pos.0, self.cursor.pos.1),
             Point::new(self.cursor.pos.0, self.cursor.pos.1),
         ));
+        self.draw_help().ok();
         self.draw_status();
         self.cursor.toogle_hidden();
     }
@@ -184,7 +186,7 @@ impl Editor {
         } else {
             (area.starting_point.y, area.final_point.y)
         };
-         Ok((area_y, area_x))
+        Ok((area_y, area_x))
     }
     ///redraw all the pixels that were covered by the area selection
     fn draw_area_pixels(&self) -> Result<()> {
@@ -202,7 +204,10 @@ impl Editor {
         self.attrset(COLOR_PAIR(9));
         for i in (area_position.0 .0)..=(area_position.0 .1) {
             for j in area_position.1 .0..=area_position.1 .1 {
-                if (i >= 0 && i <= self.tif_image.height as i32 - 1) && j >= 0 && j <= self.tif_image.width as i32 - 1 {
+                if (i >= 0 && i <= self.tif_image.height as i32 - 1)
+                    && j >= 0
+                    && j <= self.tif_image.width as i32 - 1
+                {
                     self.mvaddch(i, j, '#');
                 }
             }
@@ -216,7 +221,10 @@ impl Editor {
         let area_position = self.get_area_positions()?;
         for i in (area_position.0 .0)..=(area_position.0 .1) {
             for j in area_position.1 .0..=area_position.1 .1 {
-                if (i >= 0 && i <= self.tif_image.height as i32 - 1) && j >= 0 && j <= self.tif_image.width as i32 - 1 {
+                if (i >= 0 && i <= self.tif_image.height as i32 - 1)
+                    && j >= 0
+                    && j <= self.tif_image.width as i32 - 1
+                {
                     self.set_pix_color((i as usize, j as usize), color)?;
                 }
             }
@@ -269,6 +277,77 @@ impl Editor {
         self.draw_status();
         self.refresh();
 
+        Ok(())
+    }
+
+    pub fn draw_help(&self) -> Result<()> {
+        if self.tif_image.width as i32 + 45 > self.get_window_size().1 {
+            return Err(anyhow!("window is too small"));
+        }
+        for j in 0..10 {
+            for i in self.tif_image.width as i32 + 10..self.tif_image.width as i32 + 45 {
+                self.mvaddch(j, i, ' ');
+            }
+        }
+        match self.mode {
+            Mode::Selection => {
+                self.mvprintw(
+                    1,
+                    self.tif_image.width as i32 + 10,
+                    "[I] -> insertion mode".to_uppercase(),
+                );
+                self.mvprintw(
+                    3,
+                    self.tif_image.width as i32 + 10,
+                    "[S] -> Area Mode".to_uppercase(),
+                );
+                self.mvprintw(
+                    5,
+                    self.tif_image.width as i32 + 10,
+                    "[1..8] -> select color".to_uppercase(),
+                );
+            }
+            Mode::Insertion => {
+                self.mvprintw(
+                    1,
+                    self.tif_image.width as i32 + 10,
+                    "[ESC] -> selection mode".to_uppercase(),
+                );
+                self.mvprintw(
+                    3,
+                    self.tif_image.width as i32 + 10,
+                    "[SPACE] -> paint the area".to_uppercase(),
+                );
+                self.mvprintw(
+                    5,
+                    self.tif_image.width as i32 + 10,
+                    "[⬅ ➡ ⬆ ⬇] -> move without painting".to_uppercase(),
+                );
+                self.mvprintw(
+                    7,
+                    self.tif_image.width as i32 + 10,
+                    "[wasd] -> move and paint".to_uppercase(),
+                );
+            }
+            Mode::Area => {
+                self.mvprintw(
+                    1,
+                    self.tif_image.width as i32 + 10,
+                    "[ESC] -> selection mode".to_uppercase(),
+                );
+                self.mvprintw(
+                    3,
+                    self.tif_image.width as i32 + 10,
+                    "[SPACE] -> draw in the selected area".to_uppercase(),
+                );
+                self.mvprintw(
+                    5,
+                    self.tif_image.width as i32 + 10,
+                    "[WASD] -> move and sellect".to_uppercase(),
+                );
+
+            }
+        }
         Ok(())
     }
 }

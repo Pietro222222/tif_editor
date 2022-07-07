@@ -48,6 +48,7 @@ fn main() -> Result<()> {
     let mut editor = Editor::new(tif);
     editor.is_terminal_size_enough()?;
     editor.draw_ui()?;
+    editor.draw_help().ok(); //dont handle this error
     'editor: loop {
         if let Some(c) = editor.getch() {
             let mut cursor_pos = editor.cursor.pos;
@@ -75,7 +76,7 @@ fn main() -> Result<()> {
                         editor.set_mode(Mode::Insertion);
                     } else if c == 'q' && editor.get_mode() == Mode::Selection {
                         break 'editor;
-                    }else if matches!(c, '1'..='8') && editor.get_mode() == Mode::Selection {
+                    }else if matches!(c, '0'..='8') && editor.get_mode() == Mode::Selection {
                         let color = c as u8 - 48;
                         editor.set_selected_color(Color(color as u32).into());
                     }else if c == ' ' && editor.get_mode() == Mode::Insertion {

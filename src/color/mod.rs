@@ -31,7 +31,7 @@ impl From<&PixelColor> for Color {
 impl Into<PixelColor> for Color {
     fn into(self) -> PixelColor {
         PixelColor::from(match *self -1 {
-            0 => { 0x5a  },
+            0 => { 0x5b  },
             1 => {
                 0x5c
             },
