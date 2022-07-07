@@ -24,10 +24,10 @@ struct Args {
     #[clap(short, long, value_parser)]
     create: bool,
 
-    #[clap(short, long, value_parser)]
+    #[clap(short, long, value_parser, default_value_t=1)]
     height: i32,
 
-    #[clap(short, long, value_parser)]
+    #[clap(short, long, value_parser, default_value_t=1)]
     width: u8
 }
 
