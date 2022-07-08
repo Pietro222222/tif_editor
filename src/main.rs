@@ -6,9 +6,7 @@ use color::Color;
 use editor::Editor;
 use libtif::{image::TifImage, pixel::PixelColor};
 use mode::Mode;
-use pancurses::{
-    endwin, getmouse, mousemask, Input, ALL_MOUSE_EVENTS
-};
+use pancurses::{endwin, getmouse, mousemask, Input, ALL_MOUSE_EVENTS, REPORT_MOUSE_POSITION};
 
 mod area;
 mod color;
@@ -49,10 +47,11 @@ fn main() -> Result<()> {
     editor.is_terminal_size_enough()?;
     editor.draw_ui()?;
     editor.draw_help().ok(); //dont handle this error
-    if mousemask(ALL_MOUSE_EVENTS, None) == 0 {
+    if mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, None) == 0 {
         editor.mvprintw(40, 0, "COULD NOT GET MOUSE EVENTS!");
         editor.refresh();
     }
+
     'editor: loop {
         if let Some(c) = editor.getch() {
             let mut cursor_pos = editor.cursor.pos;
@@ -149,33 +148,28 @@ fn main() -> Result<()> {
                 }
                 Input::KeyMouse => {
                     match getmouse() {
-                        Ok(mouse) => {
-                            match mouse.bstate {
-                                4 if editor.get_mode() == Mode::Area => {
-                                    editor.set_cursor_pos((mouse.y, mouse.x)).ok();
-                                    editor.set_area_based_on_current_cursor_position()?;
-                                    editor.draw_area_pixels()?;
-                                    editor.draw_area()?;
-                                }
-                                8 if editor.get_mode() == Mode::Area => {
-                                    editor.set_area_color(editor.selected_color)?;
-                                    editor.set_mode(Mode::Selection);
-                                    editor.set_cursor_pos((mouse.y, mouse.x)).ok();
-                                    editor.refresh();
-                                }
-                                4 => {
-                                    editor.set_cursor_pos((mouse.y, mouse.x)).ok();
-                                }
-                                8 => {
-                                    editor.set_cursor_pos((mouse.y, mouse.x)).ok();
-                                    editor.set_pix_at_cursor(editor.selected_color)?;
-                                }
-
-                                _ => {} // the result of this function doesnt really matter
+                        Ok(mouse) => match mouse.bstate {
+                            4 if editor.get_mode() == Mode::Area => {
+                                editor.set_cursor_pos((mouse.y, mouse.x)).ok();
+                                editor.set_area_based_on_current_cursor_position()?;
+                                editor.draw_area_pixels()?;
+                                editor.draw_area()?;
                             }
-
-                            //editor.mvprintw(40, 0, format!("{}     ", mouse.bstate));
-                        }
+                            8 if editor.get_mode() == Mode::Area => {
+                                editor.set_area_color(editor.selected_color)?;
+                                editor.set_mode(Mode::Selection);
+                                editor.set_cursor_pos((mouse.y, mouse.x)).ok();
+                                editor.refresh();
+                            }
+                            4 => {
+                                editor.set_cursor_pos((mouse.y, mouse.x)).ok();
+                            }
+                            8 if editor.get_mode() == Mode::Insertion => {
+                                editor.set_cursor_pos((mouse.y, mouse.x)).ok();
+                                editor.set_pix_at_cursor(editor.selected_color)?;
+                            }
+                            _ => {}
+                        },
                         Err(e) => {
                             editor.mvprintw(40, 0, format!("{:?}", e));
                         }
@@ -186,6 +180,7 @@ fn main() -> Result<()> {
             }
         }
     }
+    println!("\033[?1003l\n");
     endwin();
     let mut file = OpenOptions::new()
         .truncate(true)
