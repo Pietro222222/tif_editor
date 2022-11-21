@@ -94,9 +94,9 @@ impl Editor {
         let pix = self.get_pix(&pos).context("out of bounds")?;
 
         let color = Color::from(pix);
-        self.attrset(COLOR_PAIR(*color));
+        self.attrset(COLOR_PAIR((*color).into()));
         self.mvaddch(pos.0 as i32, pos.1 as i32, ' ');
-        self.attroff(COLOR_PAIR(*color));
+        self.attroff(COLOR_PAIR((*color).into()));
         Ok(())
     }
     pub fn set_cursor_pos(&mut self, pos: (i32, i32)) -> Result<()> {
@@ -143,21 +143,21 @@ impl Editor {
     fn draw_image(&self) {
         for (height, pixels) in self.tif_image.pixels.iter().enumerate() {
             for (width, pixel) in pixels.iter().enumerate() {
-                self.attrset(COLOR_PAIR(*Color::from(pixel)));
+                self.attrset(COLOR_PAIR(*Color::from(pixel) as u64));
                 self.mvaddch(height as i32, width as i32, ' ');
-                self.attrset(COLOR_PAIR(*Color::from(pixel)));
+                self.attrset(COLOR_PAIR(*Color::from(pixel) as u64));
             }
         }
     }
     fn draw_border(&self) {
         let x_pos = self.tif_image.width;
         let y_pos = self.tif_image.height;
-        self.attrset(COLOR_PAIR(*Color::from(&PixelColor::Red)));
+        self.attrset(COLOR_PAIR(*Color::from(&PixelColor::Red) as u64));
         self.mvprintw(y_pos as i32, 0, String::from(" ").repeat(x_pos as usize));
         for i in 0..y_pos {
             self.mvaddch(i as i32, x_pos as i32, ' ');
         }
-        self.attroff(COLOR_PAIR(*Color::from(&PixelColor::Red)));
+        self.attroff(COLOR_PAIR(*Color::from(&PixelColor::Red) as u64));
     }
     fn draw_color_pallete(&self) {
         let y_pos = self.tif_image.height + 3;
